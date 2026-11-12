@@ -34,8 +34,19 @@ import {
   DEMO_PONTOS_MOVIMENTOS,
   DEMO_REGRA_PONTOS,
 } from "./demo-fase3";
+import {
+  DEMO_ASSINATURAS,
+  DEMO_EVENTOS,
+  DEMO_INVOICES,
+  DEMO_LIMITES,
+  DEMO_METRICAS,
+  DEMO_PLANOS,
+  DEMO_TENANTS_ADMIN,
+} from "./demo-fase4";
 import type {
   Agendamento,
+  Assinatura,
+  AssinaturaEvento,
   Avaliacao,
   CategoriaFinanceira,
   Cliente,
@@ -46,15 +57,20 @@ import type {
   ContaReceber,
   FormaPagamento,
   Funcionario,
+  Invoice,
   Notificacao,
   OrdemServico,
   Pacote,
   PacoteItem,
   Pagamento,
+  Plano,
+  PlanoLimite,
   PontoMovimento,
   PontosRegra,
   Produto,
+  SaasMetricas,
   Servico,
+  Tenant,
   Veiculo,
 } from "@/types/database";
 
@@ -380,7 +396,7 @@ function monthWindow(ref = new Date()) {
 
 export async function dreMensal(ref = new Date()): Promise<DreLinha[]> {
   const { inicio, fim } = monthWindow(ref);
-  const [ordens, contas, pagamentos, categorias, comissoes, produtos] =
+  const [ordens, contas, pagamentos, categorias, comissoes, produtos, custoRealMap] =
     await Promise.all([
       listOrdens(),
       listContasPagar(),
@@ -388,6 +404,7 @@ export async function dreMensal(ref = new Date()): Promise<DreLinha[]> {
       listCategoriasFinanceiras(),
       listComissoes(),
       listProdutos(),
+      custoRealPorOrdem(),
     ]);
 
   // Receita bruta = soma de pagamentos dentro do mês.
@@ -415,9 +432,17 @@ export async function dreMensal(ref = new Date()): Promise<DreLinha[]> {
     const d = new Date(o.entregue_em);
     return d >= inicio && d < fim;
   });
-  const custoServicos = osEntreguesMes.reduce((acc, o) => {
-    return acc + Number(o.total) * 0.08; // estimativa quando sem ficha técnica
-  }, 0);
+  // Custo dos serviços: soma dos consumos registrados (movimentos_estoque
+  // com tipo "saida" ou "perda" vinculados à OS). Se não houver nenhum
+  // consumo registrado, cai no fallback de 8% para não zerar o indicador.
+  const custoServicosReal = osEntreguesMes.reduce(
+    (acc, o) => acc + (custoRealMap.get(o.id) ?? 0),
+    0,
+  );
+  const custoServicos =
+    custoServicosReal > 0
+      ? custoServicosReal
+      : osEntreguesMes.reduce((acc, o) => acc + Number(o.total) * 0.08, 0);
 
   const lucroBruto = receitaLiquida - custoServicos;
 
@@ -579,4 +604,149 @@ export async function listAvaliacoes(): Promise<Avaliacao[]> {
     .eq("tenant_id", tid)
     .order("created_at", { ascending: false });
   return (data as Avaliacao[]) ?? [];
+}
+
+/**
+ * Para cada OS do tenant, retorna o custo real consumido a partir dos
+ * lançamentos em movimentos_estoque. Usado pelo DRE.
+ */
+export async function custoRealPorOrdem(): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return map;
+  const { data } = await supabase
+    .from("movimentos_estoque")
+    .select("ordem_id, quantidade, custo_unit, produto_id, tipo, produtos(custo_medio)")
+    .eq("tenant_id", tid)
+    .in("tipo", ["saida", "perda"])
+    .not("ordem_id", "is", null);
+  for (const row of (data as Array<{
+    ordem_id: string;
+    quantidade: number;
+    custo_unit: number | null;
+    produtos?: { custo_medio: number } | null;
+  }> | null) ?? []) {
+    const custo = row.custo_unit ?? row.produtos?.custo_medio ?? 0;
+    map.set(
+      row.ordem_id,
+      (map.get(row.ordem_id) ?? 0) + Number(custo) * Number(row.quantidade),
+    );
+  }
+  return map;
+}
+
+// =========================================================
+// FASE 4 ─ Plataforma SaaS (superadmin)
+// =========================================================
+
+async function requireSuperadmin(): Promise<boolean> {
+  const s = await getSession();
+  return (
+    s.memberships?.some(
+      (m) => m.perfil === "superadmin" && m.ativo !== false,
+    ) ?? false
+  );
+}
+
+export async function listPlanos(): Promise<Plano[]> {
+  const supabase = createServerSupabase();
+  if (!supabase) return DEMO_PLANOS;
+  const { data } = await supabase
+    .from("planos")
+    .select("*")
+    .order("ordem", { ascending: true });
+  return (data as Plano[]) ?? [];
+}
+
+export async function listPlanoLimites(): Promise<PlanoLimite[]> {
+  const supabase = createServerSupabase();
+  if (!supabase) return DEMO_LIMITES;
+  const { data } = await supabase.from("plano_limites").select("*");
+  return (data as PlanoLimite[]) ?? [];
+}
+
+export async function listTenantsAdmin(): Promise<Tenant[]> {
+  if (!(await requireSuperadmin())) {
+    const supabase = createServerSupabase();
+    if (!supabase) return DEMO_TENANTS_ADMIN;
+    return [];
+  }
+  const supabase = createServerSupabase();
+  if (!supabase) return DEMO_TENANTS_ADMIN;
+  const { data } = await supabase
+    .from("tenants")
+    .select("*")
+    .order("created_at", { ascending: false });
+  return (data as Tenant[]) ?? [];
+}
+
+export async function listAssinaturasAdmin(): Promise<Assinatura[]> {
+  const supabase = createServerSupabase();
+  if (!supabase) return DEMO_ASSINATURAS;
+  if (!(await requireSuperadmin())) return [];
+  const { data } = await supabase
+    .from("assinaturas")
+    .select("*")
+    .order("updated_at", { ascending: false });
+  return (data as Assinatura[]) ?? [];
+}
+
+export async function listInvoicesAdmin(): Promise<Invoice[]> {
+  const supabase = createServerSupabase();
+  if (!supabase) return DEMO_INVOICES;
+  if (!(await requireSuperadmin())) return [];
+  const { data } = await supabase
+    .from("invoices")
+    .select("*")
+    .order("vencimento", { ascending: false })
+    .limit(200);
+  return (data as Invoice[]) ?? [];
+}
+
+export async function listAssinaturaEventosAdmin(): Promise<AssinaturaEvento[]> {
+  const supabase = createServerSupabase();
+  if (!supabase) return DEMO_EVENTOS;
+  if (!(await requireSuperadmin())) return [];
+  const { data } = await supabase
+    .from("assinatura_eventos")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  return (data as AssinaturaEvento[]) ?? [];
+}
+
+export async function saasMetricas(): Promise<SaasMetricas> {
+  const supabase = createServerSupabase();
+  if (!supabase) return DEMO_METRICAS;
+  if (!(await requireSuperadmin())) {
+    return {
+      empresas_ativas: 0,
+      em_trial: 0,
+      assinantes_ativos: 0,
+      inadimplentes: 0,
+      cancelamentos: 0,
+      mrr: 0,
+      arr: 0,
+    };
+  }
+  const { data } = await supabase
+    .from("v_saas_metricas")
+    .select("*")
+    .maybeSingle();
+  return (
+    (data as SaasMetricas | null) ?? {
+      empresas_ativas: 0,
+      em_trial: 0,
+      assinantes_ativos: 0,
+      inadimplentes: 0,
+      cancelamentos: 0,
+      mrr: 0,
+      arr: 0,
+    }
+  );
+}
+
+export async function isSuperadminUser(): Promise<boolean> {
+  return requireSuperadmin();
 }

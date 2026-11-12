@@ -9,7 +9,7 @@ export type Perfil =
   | "operacional"
   | "financeiro";
 
-export type Plano = "trial" | "starter" | "pro" | "enterprise";
+export type PlanoCodigo = "trial" | "starter" | "pro" | "enterprise";
 
 export type StatusTenant = "ativo" | "suspenso" | "cancelado";
 
@@ -48,7 +48,7 @@ export interface Tenant {
   documento: string | null;
   telefone: string | null;
   email: string | null;
-  plano: Plano;
+  plano: PlanoCodigo;
   status: StatusTenant;
   logo_url: string | null;
   trial_termina_em: string | null;
@@ -410,4 +410,97 @@ export interface Avaliacao {
   comentario: string | null;
   publicada: boolean;
   created_at: string;
+}
+
+// -------------------- Fase 4 --------------------
+
+export interface Plano {
+  id: string;
+  codigo: string;
+  nome: string;
+  preco_mensal: number;
+  trial_dias: number;
+  descricao: string | null;
+  ativo: boolean;
+  ordem: number;
+}
+
+export interface PlanoLimite {
+  plano_id: string;
+  max_unidades: number;
+  max_usuarios: number;
+  max_veiculos_mes: number;
+  funcionalidades: Record<string, boolean>;
+}
+
+export type StatusAssinatura =
+  | "trial"
+  | "ativa"
+  | "inadimplente"
+  | "pausada"
+  | "cancelada"
+  | "expirada";
+
+export interface Assinatura {
+  id: string;
+  tenant_id: string;
+  plano_id: string;
+  status: StatusAssinatura;
+  trial_expira_em: string | null;
+  periodo_inicio: string;
+  periodo_fim: string;
+  proxima_cobranca: string | null;
+  cancelada_em: string | null;
+  motivo_cancelamento: string | null;
+  gateway: string | null;
+  gateway_subscription_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AssinaturaEvento {
+  id: string;
+  assinatura_id: string;
+  tenant_id: string;
+  tipo:
+    | "criada"
+    | "iniciou_trial"
+    | "trial_expirou"
+    | "ativada"
+    | "renovada"
+    | "pagamento_falhou"
+    | "inadimplente"
+    | "pausada"
+    | "cancelada"
+    | "plano_alterado";
+  de_plano_id: string | null;
+  para_plano_id: string | null;
+  detalhes: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface Invoice {
+  id: string;
+  tenant_id: string;
+  assinatura_id: string;
+  numero: string;
+  competencia: string;
+  vencimento: string;
+  valor: number;
+  status: "aberta" | "paga" | "atrasada" | "cancelada" | "estornada";
+  pago_em: string | null;
+  gateway: string | null;
+  gateway_invoice_id: string | null;
+  gateway_fatura_url: string | null;
+  created_at: string;
+}
+
+export interface SaasMetricas {
+  empresas_ativas: number;
+  em_trial: number;
+  assinantes_ativos: number;
+  inadimplentes: number;
+  cancelamentos: number;
+  mrr: number;
+  arr: number;
 }

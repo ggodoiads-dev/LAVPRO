@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, Plus } from "lucide-react";
+import { Bell, Plus, ShieldCheck } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
@@ -11,6 +11,9 @@ export async function Header() {
   const nome = session.profile?.nome ?? session.user?.email ?? "Operador";
   const empresa = session.activeTenant?.nome ?? null;
   const plano = session.activeTenant?.plano;
+  const isSuperadmin = session.memberships?.some(
+    (m) => m.perfil === "superadmin" && m.ativo !== false,
+  );
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center border-b border-border bg-background/95 px-4 backdrop-blur md:px-6">
@@ -27,6 +30,13 @@ export async function Header() {
       </div>
 
       <div className="flex items-center gap-1.5">
+        {isSuperadmin || session.isDemo ? (
+          <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex">
+            <Link href="/admin">
+              <ShieldCheck className="h-4 w-4" /> Admin
+            </Link>
+          </Button>
+        ) : null}
         <Button asChild variant="electric" size="sm" className="hidden sm:inline-flex">
           <Link href="/ordens/novo">
             <Plus className="h-4 w-4" /> Nova OS

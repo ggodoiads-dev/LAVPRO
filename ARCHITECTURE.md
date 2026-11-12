@@ -43,7 +43,7 @@ tenant, isolado por `tenant_id`. As camadas:
 
 ---
 
-## 2. Modelo de dados (Fases 1, 2 e 3)
+## 2. Modelo de dados (Fases 1, 2, 3 e 4)
 
 ```
 tenants ───┬─< unidades ──< boxes
@@ -66,10 +66,17 @@ tenants ───┬─< unidades ──< boxes
            ├─< notificacoes (cliente_id, ordem_id)
            ├─< avaliacoes (ordem_id)
            ├─< agendamentos ──< agendamento_servicos
+           ├─< assinatura (1-1 tenant) → plano
+           ├─< assinatura_eventos (append-only)
            └─< ordens_servico ──┬─< ordem_itens
                                 ├─< ordem_funcionarios
                                 └─< ordem_historico
                                 ordem_sequencias (1-1 tenant)
+
+planos ───┬─< plano_limites (1-1)
+          └─< assinaturas ──< invoices (cobranças recorrentes)
+
+webhook_events (append-only, UNIQUE em (gateway, event_id))
 ```
 
 ### Tabelas principais
@@ -205,6 +212,7 @@ reescrever a UI.
 | **1 — Fundação (concluída)** | Auth, multi-tenant, operação, Kanban, dashboard. |
 | **2 — Gestão administrativa (concluída)** | Funcionários, estoque, consumo por OS, financeiro, comissões, relatórios, DRE gerencial. |
 | **3 — Expansão comercial (concluída)** | Pacotes pré-pagos, programa de pontos, portal público, agendamento online, fila de notificações, avaliações, exportação CSV, baixa automática de estoque, custo real da OS. |
+| **4 — Plataforma SaaS (concluída)** | Painel /admin do superadmin, catálogo de planos com limites e features, assinaturas (trial → ativa → inadimplente → cancelada), invoices, webhook idempotente de gateway com verificação HMAC, view v_saas_metricas (MRR/ARR), DRE usa custo real. |
 | **3 — Expansão comercial** | CRM, fidelização, portal do cliente, notificações (WhatsApp/e-mail), agendamento online, pacotes. |
 | **4 — Plataforma SaaS** | Painel superadmin, planos, assinaturas, cobrança recorrente (gateway), limites por plano. |
 | **5 — Inteligência** | Previsão de demanda, recomendações, análise de rentabilidade, automação de campanhas. |

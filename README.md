@@ -7,7 +7,7 @@ detalhadores. Centraliza agendamento, ordens de serviço, clientes,
 veículos, equipe, estoque, financeiro e indicadores em uma única
 plataforma multi-tenant.
 
-Este repositório contém as **Fases 1, 2 e 3 — Fundação, Operação, Gestão administrativa e Expansão comercial**:
+Este repositório contém as **Fases 1 a 4 — Fundação, Operação, Gestão administrativa, Expansão comercial e Plataforma SaaS**:
 
 **Fase 1 — Fundação & operação**
 
@@ -55,6 +55,27 @@ Este repositório contém as **Fases 1, 2 e 3 — Fundação, Operação, Gestã
   pronta para substituir a aproximação do DRE.
 - Exportação CSV em `/api/export/:recurso` para clientes, veículos,
   serviços, ordens, produtos, funcionários, comissões e contas a pagar.
+
+**Fase 4 — Plataforma SaaS**
+
+- Painel `/admin` (apenas perfil `superadmin`) com MRR, ARR, assinantes
+  ativos, inadimplentes, trial, distribuição por plano e eventos recentes.
+- Catálogo de planos (`planos`, `plano_limites`) com limites por plano
+  (unidades, usuários, veículos/mês) e flags de funcionalidades.
+- Ciclo de vida de assinatura: trial → ativa → inadimplente → pausada →
+  cancelada → expirada, cada mudança gravada em `assinatura_eventos`.
+- Cobranças recorrentes em `invoices` com status (aberta, paga, atrasada,
+  cancelada, estornada).
+- Webhook idempotente em `/api/webhooks/gateway`:
+  - verifica assinatura HMAC-SHA256 (`x-lavpro-signature: t=…,v1=…`),
+  - persiste em `webhook_events` com `UNIQUE (gateway, event_id)` para
+    deduplicar re-entregas,
+  - chama RPCs `ativar_assinatura`, `marcar_assinatura_inadimplente` ou
+    `cancelar_assinatura` — frontend nunca altera o estado.
+- View `v_saas_metricas` com MRR/ARR agregados.
+- Custo real da OS passa a alimentar o DRE gerencial (via
+  `movimentos_estoque` + `custo_medio`); fallback de 8% só quando não há
+  consumo registrado.
 
 ---
 
@@ -132,6 +153,7 @@ No painel do Supabase → SQL Editor, execute na ordem:
 3. `supabase/migrations/0003_seed_defaults.sql` — função `provision_tenant` e `v_dashboard_diario`
 4. `supabase/migrations/0004_phase2_admin.sql` — estoque, financeiro, comissões, DRE
 5. `supabase/migrations/0005_phase3_crm.sql` — pacotes, pontos, notificações, avaliações, portal público
+6. `supabase/migrations/0006_phase4_saas.sql` — planos, assinaturas, invoices, webhooks, métricas SaaS
 
 > Se preferir, use a CLI do Supabase (`supabase db push`) com o
 > projeto linkado.
@@ -179,7 +201,7 @@ dado é persistido nesse modo.
 - **Fase 1 — Fundação (concluída).** Auth, multi-tenant, operação essencial, Kanban, dashboard.
 - **Fase 2 — Gestão administrativa (concluída).** Funcionários, estoque, financeiro, comissões, DRE, relatórios.
 - **Fase 3 — Expansão comercial (concluída).** Pacotes, fidelização, portal do cliente, agendamento online, fila de notificações, avaliações, exportações.
-- **Fase 4 — Plataforma SaaS.** Painel superadmin, planos, cobrança recorrente.
+- **Fase 4 — Plataforma SaaS (concluída).** Painel superadmin, planos, assinaturas, MRR/ARR, webhook idempotente de gateway.
 - **Fase 5 — Inteligência.** Previsão de demanda, recomendações, análise de rentabilidade.
 
 Veja `ARCHITECTURE.md` para o detalhamento da arquitetura, o ERD e as
