@@ -40,3 +40,7 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+
+# Supabase CLI runtime caches (nunca versionar)
+supabase/.temp/
+supabase/.branches/
