@@ -43,7 +43,7 @@ tenant, isolado por `tenant_id`. As camadas:
 
 ---
 
-## 2. Modelo de dados (Fases 1, 2, 3 e 4)
+## 2. Modelo de dados (Fases 1 a 5)
 
 ```
 tenants ───┬─< unidades ──< boxes
@@ -77,6 +77,9 @@ planos ───┬─< plano_limites (1-1)
           └─< assinaturas ──< invoices (cobranças recorrentes)
 
 webhook_events (append-only, UNIQUE em (gateway, event_id))
+
+campanhas ──< campanha_execucoes
+            → notificacoes (fila enfileirada pela função executar_campanha)
 ```
 
 ### Tabelas principais
@@ -213,6 +216,7 @@ reescrever a UI.
 | **2 — Gestão administrativa (concluída)** | Funcionários, estoque, consumo por OS, financeiro, comissões, relatórios, DRE gerencial. |
 | **3 — Expansão comercial (concluída)** | Pacotes pré-pagos, programa de pontos, portal público, agendamento online, fila de notificações, avaliações, exportação CSV, baixa automática de estoque, custo real da OS. |
 | **4 — Plataforma SaaS (concluída)** | Painel /admin do superadmin, catálogo de planos com limites e features, assinaturas (trial → ativa → inadimplente → cancelada), invoices, webhook idempotente de gateway com verificação HMAC, view v_saas_metricas (MRR/ARR), DRE usa custo real. |
+| **5 — Inteligência (concluída)** | Previsão de demanda (heatmap dia × hora), recomendações operacionais derivadas dos dados, projeção de DRE, campanhas automáticas (reativação / aniversário / pós-atendimento / lembrete) enfileirando em `notificacoes`, cron endpoint protegido por `CRON_SECRET`, views analíticas (`v_demanda_por_slot`, `v_ltv_por_cliente`, `v_servico_margem`). |
 | **3 — Expansão comercial** | CRM, fidelização, portal do cliente, notificações (WhatsApp/e-mail), agendamento online, pacotes. |
 | **4 — Plataforma SaaS** | Painel superadmin, planos, assinaturas, cobrança recorrente (gateway), limites por plano. |
 | **5 — Inteligência** | Previsão de demanda, recomendações, análise de rentabilidade, automação de campanhas. |

@@ -17,6 +17,7 @@ const APP_ROUTES = [
   "/pacotes",
   "/fidelidade",
   "/notificacoes",
+  "/inteligencia",
   "/configuracoes",
 ];
 

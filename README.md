@@ -7,7 +7,7 @@ detalhadores. Centraliza agendamento, ordens de serviço, clientes,
 veículos, equipe, estoque, financeiro e indicadores em uma única
 plataforma multi-tenant.
 
-Este repositório contém as **Fases 1 a 4 — Fundação, Operação, Gestão administrativa, Expansão comercial e Plataforma SaaS**:
+Este repositório contém as **Fases 1 a 5 — Fundação, Operação, Gestão administrativa, Expansão comercial, Plataforma SaaS e Inteligência**:
 
 **Fase 1 — Fundação & operação**
 
@@ -76,6 +76,23 @@ Este repositório contém as **Fases 1 a 4 — Fundação, Operação, Gestão a
 - Custo real da OS passa a alimentar o DRE gerencial (via
   `movimentos_estoque` + `custo_medio`); fallback de 8% só quando não há
   consumo registrado.
+
+**Fase 5 — Inteligência & automação**
+
+- Previsão de demanda: heatmap por dia da semana × hora sobre os últimos
+  90 dias, com destaque dos horários de pico.
+- Recomendações operacionais derivadas dos próprios dados (OS atrasadas,
+  clientes inativos, estoque mínimo, serviços de alta margem, variação
+  semanal do faturamento).
+- Projeção de DRE mensal (receita líquida, EBITDA, resultado) via
+  extrapolação linear do mês corrente.
+- Campanhas automáticas (`reativacao`, `aniversario`, `pos_atendimento`,
+  `lembrete_agendamento`, `manual`) que enfileiram mensagens em
+  `/notificacoes` via RPC `executar_campanha`, idempotente por janela.
+- Endpoint `/api/cron/campanhas` protegido por `CRON_SECRET` para
+  Supabase Scheduled Function ou Vercel Cron.
+- Views analíticas `v_demanda_por_slot`, `v_ltv_por_cliente` e
+  `v_servico_margem` (margem real por serviço).
 
 ---
 
@@ -154,6 +171,7 @@ No painel do Supabase → SQL Editor, execute na ordem:
 4. `supabase/migrations/0004_phase2_admin.sql` — estoque, financeiro, comissões, DRE
 5. `supabase/migrations/0005_phase3_crm.sql` — pacotes, pontos, notificações, avaliações, portal público
 6. `supabase/migrations/0006_phase4_saas.sql` — planos, assinaturas, invoices, webhooks, métricas SaaS
+7. `supabase/migrations/0007_phase5_intelligence.sql` — campanhas, execuções, views analíticas e `executar_campanha`
 
 > Se preferir, use a CLI do Supabase (`supabase db push`) com o
 > projeto linkado.
@@ -202,7 +220,7 @@ dado é persistido nesse modo.
 - **Fase 2 — Gestão administrativa (concluída).** Funcionários, estoque, financeiro, comissões, DRE, relatórios.
 - **Fase 3 — Expansão comercial (concluída).** Pacotes, fidelização, portal do cliente, agendamento online, fila de notificações, avaliações, exportações.
 - **Fase 4 — Plataforma SaaS (concluída).** Painel superadmin, planos, assinaturas, MRR/ARR, webhook idempotente de gateway.
-- **Fase 5 — Inteligência.** Previsão de demanda, recomendações, análise de rentabilidade.
+- **Fase 5 — Inteligência (concluída).** Previsão de demanda, recomendações operacionais, projeção financeira, automação de campanhas.
 
 Veja `ARCHITECTURE.md` para o detalhamento da arquitetura, o ERD e as
 decisões técnicas por módulo.

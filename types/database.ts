@@ -504,3 +504,39 @@ export interface SaasMetricas {
   mrr: number;
   arr: number;
 }
+
+// -------------------- Fase 5 --------------------
+
+export type GatilhoCampanha =
+  | "reativacao"
+  | "aniversario"
+  | "pos_atendimento"
+  | "lembrete_agendamento"
+  | "manual";
+
+export interface Campanha {
+  id: string;
+  tenant_id: string;
+  codigo: string;
+  nome: string;
+  descricao: string | null;
+  gatilho: GatilhoCampanha;
+  canal: CanalNotificacao;
+  template_codigo: string | null;
+  parametros: Record<string, unknown>;
+  ativo: boolean;
+  ultima_execucao: string | null;
+  proxima_execucao: string | null;
+  created_at: string;
+}
+
+export interface CampanhaExecucao {
+  id: string;
+  campanha_id: string;
+  tenant_id: string;
+  iniciada_em: string;
+  concluida_em: string | null;
+  alvos: number;
+  enfileiradas: number;
+  erro: string | null;
+}

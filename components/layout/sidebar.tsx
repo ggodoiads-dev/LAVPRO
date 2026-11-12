@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
+  Brain,
   Calendar,
   ChevronLeft,
   ClipboardList,
@@ -51,6 +52,7 @@ const NAV: NavItem[] = [
   { href: "/pacotes",       label: "Pacotes",       icon: Gift,            group: "comercial",permission: "servicos:view" },
   { href: "/fidelidade",    label: "Fidelidade",    icon: Sparkles,        group: "comercial",permission: "clientes:view" },
   { href: "/notificacoes",  label: "Notificações",  icon: Bell,            group: "comercial",permission: "clientes:view" },
+  { href: "/inteligencia",  label: "Inteligência",  icon: Brain,           group: "comercial",permission: "dashboard:view" },
 
   { href: "/configuracoes", label: "Configurações", icon: Settings,        group: "config",   permission: "config:view" },
 ];

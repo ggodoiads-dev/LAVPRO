@@ -43,11 +43,14 @@ import {
   DEMO_PLANOS,
   DEMO_TENANTS_ADMIN,
 } from "./demo-fase4";
+import { DEMO_CAMPANHAS, DEMO_EXECUCOES } from "./demo-fase5";
 import type {
   Agendamento,
   Assinatura,
   AssinaturaEvento,
   Avaliacao,
+  Campanha,
+  CampanhaExecucao,
   CategoriaFinanceira,
   Cliente,
   ClientePacote,
@@ -749,4 +752,33 @@ export async function saasMetricas(): Promise<SaasMetricas> {
 
 export async function isSuperadminUser(): Promise<boolean> {
   return requireSuperadmin();
+}
+
+// =========================================================
+// FASE 5 ─ Inteligência & automação
+// =========================================================
+
+export async function listCampanhas(): Promise<Campanha[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_CAMPANHAS;
+  const { data } = await supabase
+    .from("campanhas")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("nome");
+  return (data as Campanha[]) ?? [];
+}
+
+export async function listCampanhaExecucoes(): Promise<CampanhaExecucao[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_EXECUCOES;
+  const { data } = await supabase
+    .from("campanha_execucoes")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("iniciada_em", { ascending: false })
+    .limit(50);
+  return (data as CampanhaExecucao[]) ?? [];
 }
