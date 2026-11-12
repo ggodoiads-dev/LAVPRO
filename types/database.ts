@@ -324,3 +324,90 @@ export interface Comissao {
   pago_em: string | null;
   created_at: string;
 }
+
+// -------------------- Fase 3 --------------------
+
+export interface Pacote {
+  id: string;
+  tenant_id: string;
+  nome: string;
+  descricao: string | null;
+  preco: number;
+  validade_dias: number;
+  ativo: boolean;
+}
+
+export interface PacoteItem {
+  id: string;
+  pacote_id: string;
+  servico_id: string;
+  quantidade: number;
+}
+
+export interface ClientePacote {
+  id: string;
+  tenant_id: string;
+  cliente_id: string;
+  pacote_id: string;
+  comprado_em: string;
+  expira_em: string | null;
+  valor_pago: number;
+  ativo: boolean;
+  observacoes: string | null;
+}
+
+export interface ClientePacoteSaldo {
+  id: string;
+  cliente_pacote_id: string;
+  servico_id: string;
+  saldo: number;
+}
+
+export interface PontosRegra {
+  tenant_id: string;
+  pontos_por_real: number;
+  reais_por_ponto: number;
+  min_resgate_pontos: number;
+  ativo: boolean;
+}
+
+export interface PontoMovimento {
+  id: string;
+  tenant_id: string;
+  cliente_id: string;
+  tipo: "acumulo" | "resgate" | "ajuste" | "expiracao";
+  pontos: number;
+  ordem_id: string | null;
+  motivo: string | null;
+  criado_em: string;
+}
+
+export type CanalNotificacao = "whatsapp" | "sms" | "email" | "push" | "console";
+
+export interface Notificacao {
+  id: string;
+  tenant_id: string;
+  cliente_id: string | null;
+  ordem_id: string | null;
+  template_codigo: string | null;
+  canal: CanalNotificacao;
+  destinatario: string;
+  assunto: string | null;
+  corpo: string;
+  status: "pendente" | "enviada" | "erro" | "cancelada";
+  erro: string | null;
+  agendada_para: string | null;
+  enviada_em: string | null;
+  created_at: string;
+}
+
+export interface Avaliacao {
+  id: string;
+  tenant_id: string;
+  ordem_id: string;
+  cliente_id: string | null;
+  nota: number;
+  comentario: string | null;
+  publicada: boolean;
+  created_at: string;
+}

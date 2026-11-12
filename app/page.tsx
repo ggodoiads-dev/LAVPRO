@@ -52,6 +52,12 @@ const features = [
     description:
       "Isolamento real por tenant no banco de dados. Cada estabelecimento com seus próprios dados, equipe e permissões.",
   },
+  {
+    icon: Sparkles,
+    title: "Portal do cliente",
+    description:
+      "Seu cliente consulta o status pelo celular, agenda online e acompanha pontos de fidelidade sem instalar nada.",
+  },
 ];
 
 const steps = [

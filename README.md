@@ -7,7 +7,7 @@ detalhadores. Centraliza agendamento, ordens de serviço, clientes,
 veículos, equipe, estoque, financeiro e indicadores em uma única
 plataforma multi-tenant.
 
-Este repositório contém as **Fases 1 e 2 — Fundação, Operação e Gestão administrativa**:
+Este repositório contém as **Fases 1, 2 e 3 — Fundação, Operação, Gestão administrativa e Expansão comercial**:
 
 **Fase 1 — Fundação & operação**
 
@@ -34,6 +34,27 @@ Este repositório contém as **Fases 1 e 2 — Fundação, Operação e Gestão 
 - DRE gerencial mensal (regime de caixa) com margem por linha.
 - Central de relatórios com receita por serviço, comissões por
   funcionário, produtos a repor e resumo do DRE.
+
+**Fase 3 — Expansão comercial**
+
+- Pacotes pré-pagos com saldo por serviço; venda via RPC atômica
+  `vender_pacote`.
+- Programa de pontos: regra parametrizável, acúmulo automático ao
+  entregar a OS (trigger), ranking de clientes e cálculo do passivo em
+  crédito.
+- Portal público do cliente em `/portal/[slug]` (consulta por placa +
+  telefone) e agendamento online em `/book/[slug]` via função
+  `criar_agendamento_publico`.
+- Notificações: fila `notificacoes` + templates padronizados em
+  `lib/integrations/notifications.ts`; integração real plugável sem
+  alterar os pontos de chamada.
+- Avaliações (NPS) pós-OS com nota 0–10 e comentário.
+- Baixa automática de estoque a partir da ficha técnica quando a OS
+  entra em execução.
+- Custo real da OS (RPC `custo_real_ordem`) e view `v_dre_mensal`
+  pronta para substituir a aproximação do DRE.
+- Exportação CSV em `/api/export/:recurso` para clientes, veículos,
+  serviços, ordens, produtos, funcionários, comissões e contas a pagar.
 
 ---
 
@@ -110,6 +131,7 @@ No painel do Supabase → SQL Editor, execute na ordem:
 2. `supabase/migrations/0002_rls_policies.sql` — Row Level Security
 3. `supabase/migrations/0003_seed_defaults.sql` — função `provision_tenant` e `v_dashboard_diario`
 4. `supabase/migrations/0004_phase2_admin.sql` — estoque, financeiro, comissões, DRE
+5. `supabase/migrations/0005_phase3_crm.sql` — pacotes, pontos, notificações, avaliações, portal público
 
 > Se preferir, use a CLI do Supabase (`supabase db push`) com o
 > projeto linkado.
@@ -156,7 +178,7 @@ dado é persistido nesse modo.
 
 - **Fase 1 — Fundação (concluída).** Auth, multi-tenant, operação essencial, Kanban, dashboard.
 - **Fase 2 — Gestão administrativa (concluída).** Funcionários, estoque, financeiro, comissões, DRE, relatórios.
-- **Fase 3 — Expansão comercial.** CRM, fidelização, portal do cliente, notificações, pacotes.
+- **Fase 3 — Expansão comercial (concluída).** Pacotes, fidelização, portal do cliente, agendamento online, fila de notificações, avaliações, exportações.
 - **Fase 4 — Plataforma SaaS.** Painel superadmin, planos, cobrança recorrente.
 - **Fase 5 — Inteligência.** Previsão de demanda, recomendações, análise de rentabilidade.
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Search, Users } from "lucide-react";
+import { Download, Plus, Search, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,11 +40,18 @@ export default async function ClientesPage({ searchParams }: Props) {
         title="Clientes"
         description="Base única de clientes com histórico e veículos vinculados."
         actions={
-          <Button asChild variant="electric">
-            <Link href="/clientes/novo">
-              <Plus className="h-4 w-4" /> Novo cliente
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <a href="/api/export/clientes" download>
+                <Download className="h-4 w-4" /> Exportar CSV
+              </a>
+            </Button>
+            <Button asChild variant="electric">
+              <Link href="/clientes/novo">
+                <Plus className="h-4 w-4" /> Novo cliente
+              </Link>
+            </Button>
+          </div>
         }
       />
 

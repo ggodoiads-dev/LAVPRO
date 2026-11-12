@@ -144,6 +144,78 @@ export const registroSchema = z
   });
 export type RegistroInput = z.infer<typeof registroSchema>;
 
+// -------------------- Pacotes --------------------
+export const pacoteItemSchema = z.object({
+  servico_id: z.string().uuid(),
+  quantidade: z.coerce.number().int().positive(),
+});
+
+export const pacoteSchema = z.object({
+  nome: z.string().min(2, "Informe o nome do pacote").max(120),
+  descricao: optionalText,
+  preco: z.coerce.number().nonnegative(),
+  validade_dias: z.coerce.number().int().positive().default(90),
+  ativo: z.boolean().default(true),
+  itens: z.array(pacoteItemSchema).min(1, "Adicione ao menos um item"),
+});
+export type PacoteInput = z.infer<typeof pacoteSchema>;
+
+export const venderPacoteSchema = z.object({
+  cliente_id: z.string().uuid(),
+  pacote_id: z.string().uuid(),
+  valor: z.coerce.number().nonnegative().optional(),
+  observacoes: optionalText,
+});
+export type VenderPacoteInput = z.infer<typeof venderPacoteSchema>;
+
+// -------------------- Pontos --------------------
+export const pontosRegraSchema = z.object({
+  pontos_por_real: z.coerce.number().min(0).default(1),
+  reais_por_ponto: z.coerce.number().min(0).default(0.05),
+  min_resgate_pontos: z.coerce.number().int().min(0).default(200),
+  ativo: z.boolean().default(true),
+});
+export type PontosRegraInput = z.infer<typeof pontosRegraSchema>;
+
+// -------------------- Avaliação (NPS) --------------------
+export const avaliacaoSchema = z.object({
+  ordem_id: z.string().uuid(),
+  nota: z.coerce.number().int().min(0).max(10),
+  comentario: optionalText,
+  telefone: optionalText,
+});
+export type AvaliacaoInput = z.infer<typeof avaliacaoSchema>;
+
+// -------------------- Agendamento público --------------------
+export const agendamentoPublicoSchema = z.object({
+  slug: z.string().min(1),
+  nome: z.string().min(2, "Informe seu nome"),
+  telefone: z.string().min(8, "Informe um telefone válido"),
+  email: z
+    .string()
+    .email()
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  placa: z.string().min(5, "Informe a placa"),
+  marca: optionalText,
+  modelo: optionalText,
+  categoria: z
+    .enum(["moto", "hatch", "sedan", "suv", "picape", "caminhonete", "van", "outro"])
+    .default("hatch"),
+  inicio: z.string().min(10),
+  servico_ids: z.array(z.string().uuid()).min(1, "Escolha ao menos um serviço"),
+  observacoes: optionalText,
+});
+export type AgendamentoPublicoInput = z.infer<typeof agendamentoPublicoSchema>;
+
+// -------------------- Portal: consulta --------------------
+export const portalConsultaSchema = z.object({
+  slug: z.string().min(1),
+  placa: z.string().min(5),
+  telefone: z.string().min(8),
+});
+export type PortalConsultaInput = z.infer<typeof portalConsultaSchema>;
+
 // -------------------- Ordem de Serviço --------------------
 export const ordemItemSchema = z.object({
   servico_id: z.string().uuid(),

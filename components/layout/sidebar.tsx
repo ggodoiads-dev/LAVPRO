@@ -4,13 +4,16 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Bell,
   Calendar,
   ChevronLeft,
   ClipboardList,
+  Gift,
   KanbanSquare,
   LayoutDashboard,
   Package,
   Settings,
+  Sparkles,
   Users,
   Wrench,
   Car,
@@ -27,7 +30,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
-  group: "operacao" | "gestao" | "config";
+  group: "operacao" | "gestao" | "comercial" | "config";
   permission: keyof typeof PERMISSIONS;
 }
 
@@ -45,12 +48,17 @@ const NAV: NavItem[] = [
   { href: "/financeiro",    label: "Financeiro",    icon: Wallet,          group: "gestao",   permission: "financeiro:view" },
   { href: "/relatorios",    label: "Relatórios",    icon: LineChart,       group: "gestao",   permission: "dashboard:view" },
 
+  { href: "/pacotes",       label: "Pacotes",       icon: Gift,            group: "comercial",permission: "servicos:view" },
+  { href: "/fidelidade",    label: "Fidelidade",    icon: Sparkles,        group: "comercial",permission: "clientes:view" },
+  { href: "/notificacoes",  label: "Notificações",  icon: Bell,            group: "comercial",permission: "clientes:view" },
+
   { href: "/configuracoes", label: "Configurações", icon: Settings,        group: "config",   permission: "config:view" },
 ];
 
 const GROUPS = [
   { id: "operacao" as const, label: "Operação" },
   { id: "gestao" as const, label: "Gestão" },
+  { id: "comercial" as const, label: "Comercial" },
   { id: "config" as const, label: "Sistema" },
 ];
 

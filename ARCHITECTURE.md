@@ -43,7 +43,7 @@ tenant, isolado por `tenant_id`. As camadas:
 
 ---
 
-## 2. Modelo de dados (Fases 1 e 2)
+## 2. Modelo de dados (Fases 1, 2 e 3)
 
 ```
 tenants ───┬─< unidades ──< boxes
@@ -57,6 +57,14 @@ tenants ───┬─< unidades ──< boxes
            ├─< contas_pagar / contas_receber
            ├─< pagamentos (ordem_id)
            ├─< comissoes (ordem_id, item_id, funcionario_id)
+           ├─< pacotes ──< pacote_itens
+           ├─< cliente_pacotes ──< cliente_pacote_saldos
+           │                     < cliente_pacote_consumos (ordem_id)
+           ├─< pontos_regras (1-1 tenant)
+           ├─< pontos_movimentos (cliente_id, ordem_id)
+           ├─< notificacoes_templates
+           ├─< notificacoes (cliente_id, ordem_id)
+           ├─< avaliacoes (ordem_id)
            ├─< agendamentos ──< agendamento_servicos
            └─< ordens_servico ──┬─< ordem_itens
                                 ├─< ordem_funcionarios
@@ -196,6 +204,7 @@ reescrever a UI.
 |---|---|
 | **1 — Fundação (concluída)** | Auth, multi-tenant, operação, Kanban, dashboard. |
 | **2 — Gestão administrativa (concluída)** | Funcionários, estoque, consumo por OS, financeiro, comissões, relatórios, DRE gerencial. |
+| **3 — Expansão comercial (concluída)** | Pacotes pré-pagos, programa de pontos, portal público, agendamento online, fila de notificações, avaliações, exportação CSV, baixa automática de estoque, custo real da OS. |
 | **3 — Expansão comercial** | CRM, fidelização, portal do cliente, notificações (WhatsApp/e-mail), agendamento online, pacotes. |
 | **4 — Plataforma SaaS** | Painel superadmin, planos, assinaturas, cobrança recorrente (gateway), limites por plano. |
 | **5 — Inteligência** | Previsão de demanda, recomendações, análise de rentabilidade, automação de campanhas. |

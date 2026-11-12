@@ -24,17 +24,35 @@ import {
   DEMO_PAGAMENTOS,
   DEMO_PRODUTOS,
 } from "./demo-fase2";
+import {
+  DEMO_AVALIACOES,
+  DEMO_CLIENTE_PACOTES,
+  DEMO_NOTIFICACOES,
+  DEMO_PACOTES,
+  DEMO_PACOTE_ITENS,
+  DEMO_PACOTE_SALDOS,
+  DEMO_PONTOS_MOVIMENTOS,
+  DEMO_REGRA_PONTOS,
+} from "./demo-fase3";
 import type {
   Agendamento,
+  Avaliacao,
   CategoriaFinanceira,
   Cliente,
+  ClientePacote,
+  ClientePacoteSaldo,
   Comissao,
   ContaPagar,
   ContaReceber,
   FormaPagamento,
   Funcionario,
+  Notificacao,
   OrdemServico,
+  Pacote,
+  PacoteItem,
   Pagamento,
+  PontoMovimento,
+  PontosRegra,
   Produto,
   Servico,
   Veiculo,
@@ -451,4 +469,114 @@ export async function dreMensal(ref = new Date()): Promise<DreLinha[]> {
     { rotulo: "(−) Tributos sobre lucro", valor: tributos,                negativa: true },
     { rotulo: "Resultado líquido gerencial", valor: resultadoLiquido,     destaque: true, margem: margem(resultadoLiquido) },
   ];
+}
+
+// =========================================================
+// FASE 3 ─ CRM, fidelização, portal
+// =========================================================
+
+export async function listPacotes(): Promise<Pacote[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_PACOTES;
+  const { data } = await supabase
+    .from("pacotes")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("nome");
+  return (data as Pacote[]) ?? [];
+}
+
+export async function listPacoteItens(
+  pacoteId?: string,
+): Promise<PacoteItem[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) {
+    return pacoteId
+      ? DEMO_PACOTE_ITENS.filter((i) => i.pacote_id === pacoteId)
+      : DEMO_PACOTE_ITENS;
+  }
+  let q = supabase.from("pacote_itens").select("*");
+  if (pacoteId) q = q.eq("pacote_id", pacoteId);
+  const { data } = await q;
+  return (data as PacoteItem[]) ?? [];
+}
+
+export async function listClientePacotes(): Promise<ClientePacote[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_CLIENTE_PACOTES;
+  const { data } = await supabase
+    .from("cliente_pacotes")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("comprado_em", { ascending: false });
+  return (data as ClientePacote[]) ?? [];
+}
+
+export async function listClientePacoteSaldos(): Promise<ClientePacoteSaldo[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_PACOTE_SALDOS;
+  const { data } = await supabase.from("cliente_pacote_saldos").select("*");
+  return (data as ClientePacoteSaldo[]) ?? [];
+}
+
+export async function getPontosRegra(): Promise<PontosRegra> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_REGRA_PONTOS;
+  const { data } = await supabase
+    .from("pontos_regras")
+    .select("*")
+    .eq("tenant_id", tid)
+    .maybeSingle();
+  return (
+    (data as PontosRegra | null) ?? {
+      tenant_id: tid,
+      pontos_por_real: 1,
+      reais_por_ponto: 0.05,
+      min_resgate_pontos: 200,
+      ativo: false,
+    }
+  );
+}
+
+export async function listPontosMovimentos(): Promise<PontoMovimento[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_PONTOS_MOVIMENTOS;
+  const { data } = await supabase
+    .from("pontos_movimentos")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("criado_em", { ascending: false })
+    .limit(200);
+  return (data as PontoMovimento[]) ?? [];
+}
+
+export async function listNotificacoes(): Promise<Notificacao[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_NOTIFICACOES;
+  const { data } = await supabase
+    .from("notificacoes")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  return (data as Notificacao[]) ?? [];
+}
+
+export async function listAvaliacoes(): Promise<Avaliacao[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_AVALIACOES;
+  const { data } = await supabase
+    .from("avaliacoes")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("created_at", { ascending: false });
+  return (data as Avaliacao[]) ?? [];
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Download, Plus } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,11 +53,18 @@ export default async function OrdensPage({
         title="Ordens de serviço"
         description="Histórico completo de atendimentos."
         actions={
-          <Button asChild variant="electric">
-            <Link href="/ordens/novo">
-              <Plus className="h-4 w-4" /> Nova OS
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <a href="/api/export/ordens" download>
+                <Download className="h-4 w-4" /> Exportar CSV
+              </a>
+            </Button>
+            <Button asChild variant="electric">
+              <Link href="/ordens/novo">
+                <Plus className="h-4 w-4" /> Nova OS
+              </Link>
+            </Button>
+          </div>
         }
       />
 
