@@ -1,0 +1,17 @@
+// Lê variáveis obrigatórias do Supabase. Sem elas, a aplicação entra em
+// "modo demo" (ver lib/supabase/mode.ts) para que o build e a navegação
+// funcionem mesmo antes do operador conectar um projeto real.
+
+export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+export const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+export const SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+
+export const IS_SUPABASE_CONFIGURED =
+  Boolean(SUPABASE_URL) && Boolean(SUPABASE_ANON_KEY);
+
+export const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? "LAVPRO";

@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Brand - azul-marinho + azul elétrico */
+    --brand-navy: 220 70% 18%;
+    --brand-electric: 215 95% 55%;
+
+    /* Light theme */
+    --background: 210 40% 98%;
+    --foreground: 220 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 15%;
+
+    --primary: 220 70% 18%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 215 95% 55%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 215 20% 94%;
+    --muted-foreground: 220 10% 45%;
+
+    --accent: 215 25% 93%;
+    --accent-foreground: 220 70% 18%;
+
+    --destructive: 0 84% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 72% 38%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 15%;
+
+    --border: 215 20% 88%;
+    --input: 215 20% 88%;
+    --ring: 215 95% 55%;
+
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 220 30% 8%;
+    --foreground: 210 40% 96%;
+
+    --card: 220 28% 11%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 220 28% 11%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 215 95% 60%;
+    --primary-foreground: 220 30% 8%;
+
+    --secondary: 220 25% 18%;
+    --secondary-foreground: 210 40% 96%;
+
+    --muted: 220 20% 15%;
+    --muted-foreground: 220 15% 65%;
+
+    --accent: 220 25% 18%;
+    --accent-foreground: 210 40% 96%;
+
+    --destructive: 0 72% 52%;
+    --destructive-foreground: 210 40% 96%;
+
+    --success: 142 60% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 90% 55%;
+    --warning-foreground: 0 0% 10%;
+
+    --border: 220 20% 20%;
+    --input: 220 20% 20%;
+    --ring: 215 95% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  ::selection {
+    @apply bg-primary/20 text-primary;
+  }
+}
+
+@layer utilities {
+  .gradient-brand {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--brand-navy)) 0%,
+      hsl(var(--brand-electric)) 100%
+    );
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
