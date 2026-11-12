@@ -43,14 +43,20 @@ tenant, isolado por `tenant_id`. As camadas:
 
 ---
 
-## 2. Modelo de dados (Fase 1)
+## 2. Modelo de dados (Fases 1 e 2)
 
 ```
 tenants ───┬─< unidades ──< boxes
            ├─< memberships >── profiles (auth.users)
            ├─< clientes ───< veiculos
-           ├─< servicos ───< servico_precos
+           ├─< servicos ───< servico_precos / servico_produtos
            ├─< funcionarios
+           ├─< produtos ──< movimentos_estoque (ordem_id opcional)
+           ├─< categorias_financeiras
+           ├─< formas_pagamento
+           ├─< contas_pagar / contas_receber
+           ├─< pagamentos (ordem_id)
+           ├─< comissoes (ordem_id, item_id, funcionario_id)
            ├─< agendamentos ──< agendamento_servicos
            └─< ordens_servico ──┬─< ordem_itens
                                 ├─< ordem_funcionarios
@@ -189,7 +195,7 @@ reescrever a UI.
 | Fase | Entregas-chave |
 |---|---|
 | **1 — Fundação (concluída)** | Auth, multi-tenant, operação, Kanban, dashboard. |
-| **2 — Gestão administrativa** | Funcionários, estoque, consumo por OS, financeiro, comissões, relatórios, DRE gerencial. |
+| **2 — Gestão administrativa (concluída)** | Funcionários, estoque, consumo por OS, financeiro, comissões, relatórios, DRE gerencial. |
 | **3 — Expansão comercial** | CRM, fidelização, portal do cliente, notificações (WhatsApp/e-mail), agendamento online, pacotes. |
 | **4 — Plataforma SaaS** | Painel superadmin, planos, assinaturas, cobrança recorrente (gateway), limites por plano. |
 | **5 — Inteligência** | Previsão de demanda, recomendações, análise de rentabilidade, automação de campanhas. |

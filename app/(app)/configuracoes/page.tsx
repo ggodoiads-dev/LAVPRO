@@ -28,8 +28,8 @@ export default async function ConfiguracoesPage() {
       itens: [
         { label: "Usuários", status: "disponivel" as const },
         { label: "Perfis de acesso", status: "disponivel" as const },
-        { label: "Funcionários operacionais", status: "fase2" as const },
-        { label: "Regras de comissão", status: "fase2" as const },
+        { label: "Funcionários operacionais", status: "disponivel" as const },
+        { label: "Regras de comissão", status: "disponivel" as const },
       ],
     },
     {

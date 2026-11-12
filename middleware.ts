@@ -10,6 +10,10 @@ const APP_ROUTES = [
   "/agendamentos",
   "/ordens",
   "/kanban",
+  "/funcionarios",
+  "/estoque",
+  "/financeiro",
+  "/relatorios",
   "/configuracoes",
 ];
 

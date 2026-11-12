@@ -152,6 +152,82 @@ export const ordemItemSchema = z.object({
   comissao_percentual: z.coerce.number().min(0).max(100).default(0),
 });
 
+// -------------------- Funcionários --------------------
+export const funcionarioSchema = z.object({
+  nome: z.string().min(2, "Informe o nome").max(120),
+  cargo: optionalText,
+  vinculo: z.enum(["clt", "pj", "diarista", "terceiro", "outro"]).default("clt"),
+  admissao: z
+    .string()
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  comissao_padrao: z.coerce.number().min(0).max(100).default(0),
+  ativo: z.boolean().default(true),
+  observacoes: optionalText,
+});
+export type FuncionarioInput = z.infer<typeof funcionarioSchema>;
+
+// -------------------- Produtos / Estoque --------------------
+export const produtoSchema = z.object({
+  codigo: optionalText,
+  nome: z.string().min(2, "Informe o nome do produto").max(120),
+  categoria: optionalText,
+  unidade: z.string().default("un"),
+  fornecedor: optionalText,
+  custo_medio: z.coerce.number().nonnegative().default(0),
+  preco_venda: z.coerce.number().nonnegative().optional().default(0),
+  estoque_atual: z.coerce.number().nonnegative().default(0),
+  estoque_minimo: z.coerce.number().nonnegative().default(0),
+  local: optionalText,
+  ativo: z.boolean().default(true),
+});
+export type ProdutoInput = z.infer<typeof produtoSchema>;
+
+export const movimentoSchema = z.object({
+  produto_id: z.string().uuid(),
+  tipo: z.enum(["entrada", "saida", "inventario", "perda"]),
+  quantidade: z.coerce.number().positive("Quantidade deve ser positiva"),
+  custo_unit: z.coerce.number().nonnegative().optional(),
+  motivo: optionalText,
+});
+export type MovimentoInput = z.infer<typeof movimentoSchema>;
+
+// -------------------- Financeiro --------------------
+export const contaPagarSchema = z.object({
+  categoria_id: z
+    .string()
+    .uuid()
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  descricao: z.string().min(2, "Informe a descrição").max(200),
+  valor: z.coerce.number().nonnegative(),
+  vencimento: z.string().min(10, "Informe a data"),
+  forma_id: z
+    .string()
+    .uuid()
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  recorrente: z.boolean().default(false),
+  pago_em: z
+    .string()
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  observacoes: optionalText,
+});
+export type ContaPagarInput = z.infer<typeof contaPagarSchema>;
+
+export const pagamentoSchema = z.object({
+  ordem_id: z.string().uuid(),
+  forma_id: z
+    .string()
+    .uuid()
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  valor: z.coerce.number().positive("Valor deve ser positivo"),
+  observacoes: optionalText,
+});
+export type PagamentoInput = z.infer<typeof pagamentoSchema>;
+
 export const novaOrdemSchema = z.object({
   unidade_id: z.string().uuid(),
   cliente_id: z.string().uuid(),

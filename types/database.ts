@@ -204,3 +204,123 @@ export interface OrdemItem {
   comissao_percentual: number;
   total: number;
 }
+
+// -------------------- Fase 2 --------------------
+
+export interface Produto {
+  id: string;
+  tenant_id: string;
+  codigo: string | null;
+  nome: string;
+  categoria: string | null;
+  unidade: string;
+  fornecedor: string | null;
+  custo_medio: number;
+  preco_venda: number | null;
+  estoque_atual: number;
+  estoque_minimo: number;
+  local: string | null;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type TipoMovimento =
+  | "entrada"
+  | "saida"
+  | "inventario"
+  | "perda"
+  | "transferencia";
+
+export interface MovimentoEstoque {
+  id: string;
+  tenant_id: string;
+  produto_id: string;
+  tipo: TipoMovimento;
+  motivo: string | null;
+  quantidade: number;
+  custo_unit: number | null;
+  ordem_id: string | null;
+  por_user_id: string | null;
+  created_at: string;
+}
+
+export type DreGrupo =
+  | "receita_bruta"
+  | "deducoes"
+  | "custo_servicos"
+  | "despesa_operacional"
+  | "despesa_pessoal"
+  | "despesa_administrativa"
+  | "despesa_marketing"
+  | "despesa_financeira"
+  | "tributos_lucro"
+  | "outras";
+
+export interface CategoriaFinanceira {
+  id: string;
+  tenant_id: string;
+  nome: string;
+  tipo: "receita" | "despesa";
+  dre_grupo: DreGrupo;
+  ativo: boolean;
+}
+
+export interface FormaPagamento {
+  id: string;
+  tenant_id: string;
+  nome: string;
+  taxa_percentual: number;
+  ativo: boolean;
+}
+
+export interface ContaPagar {
+  id: string;
+  tenant_id: string;
+  categoria_id: string | null;
+  descricao: string;
+  valor: number;
+  vencimento: string;
+  pago_em: string | null;
+  forma_id: string | null;
+  recorrente: boolean;
+  observacoes: string | null;
+  created_at: string;
+}
+
+export interface ContaReceber {
+  id: string;
+  tenant_id: string;
+  ordem_id: string | null;
+  cliente_id: string | null;
+  descricao: string;
+  valor: number;
+  vencimento: string;
+  recebido_em: string | null;
+  forma_id: string | null;
+  observacoes: string | null;
+}
+
+export interface Pagamento {
+  id: string;
+  tenant_id: string;
+  ordem_id: string;
+  forma_id: string | null;
+  valor: number;
+  recebido_em: string;
+  observacoes: string | null;
+}
+
+export interface Comissao {
+  id: string;
+  tenant_id: string;
+  ordem_id: string;
+  item_id: string | null;
+  funcionario_id: string;
+  base: number;
+  percentual: number;
+  valor: number;
+  status: "aberta" | "paga" | "estornada";
+  pago_em: string | null;
+  created_at: string;
+}

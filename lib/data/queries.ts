@@ -14,10 +14,28 @@ import {
   DEMO_SERVICOS,
   DEMO_VEICULOS,
 } from "./demo";
+import {
+  DEMO_CATEGORIAS_FIN,
+  DEMO_COMISSOES,
+  DEMO_CONTAS_PAGAR,
+  DEMO_CONTAS_RECEBER,
+  DEMO_FORMAS,
+  DEMO_FUNCIONARIOS,
+  DEMO_PAGAMENTOS,
+  DEMO_PRODUTOS,
+} from "./demo-fase2";
 import type {
   Agendamento,
+  CategoriaFinanceira,
   Cliente,
+  Comissao,
+  ContaPagar,
+  ContaReceber,
+  FormaPagamento,
+  Funcionario,
   OrdemServico,
+  Pagamento,
+  Produto,
   Servico,
   Veiculo,
 } from "@/types/database";
@@ -221,4 +239,216 @@ export async function dashboardKpis(): Promise<DashboardKPIs> {
     serieDiaria,
     topServicos,
   };
+}
+
+// =========================================================
+// FASE 2 ─ Funcionários, estoque, financeiro, comissões
+// =========================================================
+
+export async function listFuncionarios(): Promise<Funcionario[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_FUNCIONARIOS;
+  const { data } = await supabase
+    .from("funcionarios")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("nome", { ascending: true });
+  return (data as Funcionario[]) ?? [];
+}
+
+export async function listProdutos(): Promise<Produto[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_PRODUTOS;
+  const { data } = await supabase
+    .from("produtos")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("nome", { ascending: true });
+  return (data as Produto[]) ?? [];
+}
+
+export async function listFormasPagamento(): Promise<FormaPagamento[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_FORMAS;
+  const { data } = await supabase
+    .from("formas_pagamento")
+    .select("*")
+    .eq("tenant_id", tid)
+    .eq("ativo", true)
+    .order("nome", { ascending: true });
+  return (data as FormaPagamento[]) ?? [];
+}
+
+export async function listCategoriasFinanceiras(): Promise<CategoriaFinanceira[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_CATEGORIAS_FIN;
+  const { data } = await supabase
+    .from("categorias_financeiras")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("nome");
+  return (data as CategoriaFinanceira[]) ?? [];
+}
+
+export async function listContasPagar(): Promise<ContaPagar[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_CONTAS_PAGAR;
+  const { data } = await supabase
+    .from("contas_pagar")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("vencimento", { ascending: true });
+  return (data as ContaPagar[]) ?? [];
+}
+
+export async function listContasReceber(): Promise<ContaReceber[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_CONTAS_RECEBER;
+  const { data } = await supabase
+    .from("contas_receber")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("vencimento", { ascending: true });
+  return (data as ContaReceber[]) ?? [];
+}
+
+export async function listPagamentos(): Promise<Pagamento[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_PAGAMENTOS;
+  const { data } = await supabase
+    .from("pagamentos")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("recebido_em", { ascending: false });
+  return (data as Pagamento[]) ?? [];
+}
+
+export async function listComissoes(): Promise<Comissao[]> {
+  const supabase = createServerSupabase();
+  const tid = await tenantId();
+  if (!supabase || !tid) return DEMO_COMISSOES;
+  const { data } = await supabase
+    .from("comissoes")
+    .select("*")
+    .eq("tenant_id", tid)
+    .order("created_at", { ascending: false });
+  return (data as Comissao[]) ?? [];
+}
+
+// ---------------- DRE gerencial ----------------
+export interface DreLinha {
+  rotulo: string;
+  valor: number;
+  destaque?: boolean;
+  negativa?: boolean;
+  margem?: number;
+}
+
+function monthWindow(ref = new Date()) {
+  const inicio = new Date(ref);
+  inicio.setDate(1);
+  inicio.setHours(0, 0, 0, 0);
+  const fim = new Date(inicio);
+  fim.setMonth(fim.getMonth() + 1);
+  return { inicio, fim };
+}
+
+export async function dreMensal(ref = new Date()): Promise<DreLinha[]> {
+  const { inicio, fim } = monthWindow(ref);
+  const [ordens, contas, pagamentos, categorias, comissoes, produtos] =
+    await Promise.all([
+      listOrdens(),
+      listContasPagar(),
+      listPagamentos(),
+      listCategoriasFinanceiras(),
+      listComissoes(),
+      listProdutos(),
+    ]);
+
+  // Receita bruta = soma de pagamentos dentro do mês.
+  const receita = pagamentos
+    .filter((p) => {
+      const d = new Date(p.recebido_em);
+      return d >= inicio && d < fim;
+    })
+    .reduce((a, p) => a + Number(p.valor), 0);
+
+  // Descontos = soma de desconto em OS entregues no mês.
+  const descontos = ordens
+    .filter((o) => {
+      if (!o.entregue_em) return false;
+      const d = new Date(o.entregue_em);
+      return d >= inicio && d < fim;
+    })
+    .reduce((a, o) => a + Number(o.desconto), 0);
+
+  const receitaLiquida = receita - descontos;
+
+  // Custo dos serviços: proxy via custo_estimado das OS entregues.
+  const osEntreguesMes = ordens.filter((o) => {
+    if (!o.entregue_em) return false;
+    const d = new Date(o.entregue_em);
+    return d >= inicio && d < fim;
+  });
+  const custoServicos = osEntreguesMes.reduce((acc, o) => {
+    return acc + Number(o.total) * 0.08; // estimativa quando sem ficha técnica
+  }, 0);
+
+  const lucroBruto = receitaLiquida - custoServicos;
+
+  // Despesas (contas pagas no mês) agrupadas por grupo do DRE.
+  const catById = new Map(categorias.map((c) => [c.id, c]));
+  const despesasNoMes = contas.filter((c) => {
+    if (!c.pago_em) return false;
+    const d = new Date(c.pago_em);
+    return d >= inicio && d < fim;
+  });
+
+  const grupo = (g: string) =>
+    despesasNoMes
+      .filter((c) => (c.categoria_id ? catById.get(c.categoria_id)?.dre_grupo === g : false))
+      .reduce((a, c) => a + Number(c.valor), 0);
+
+  const despOperacional = grupo("despesa_operacional");
+  const despPessoal =
+    grupo("despesa_pessoal") +
+    comissoes
+      .filter((c) => c.status !== "estornada")
+      .reduce((a, c) => a + Number(c.valor), 0);
+  const despAdministrativa = grupo("despesa_administrativa");
+  const despMarketing = grupo("despesa_marketing");
+  const despFinanceira = grupo("despesa_financeira");
+  const tributos = grupo("tributos_lucro");
+
+  const despOperacionais =
+    despOperacional + despPessoal + despAdministrativa + despMarketing;
+  const ebitda = lucroBruto - despOperacionais;
+  const resultadoAntesTributos = ebitda - despFinanceira;
+  const resultadoLiquido = resultadoAntesTributos - tributos;
+
+  const margem = (v: number) => (receitaLiquida > 0 ? (v / receitaLiquida) * 100 : 0);
+
+  // Evita variável não usada
+  void produtos;
+
+  return [
+    { rotulo: "Receita bruta",            valor: receita,                 destaque: true },
+    { rotulo: "(−) Deduções",             valor: descontos,               negativa: true },
+    { rotulo: "Receita líquida",          valor: receitaLiquida,          destaque: true, margem: 100 },
+    { rotulo: "(−) Custo dos serviços",   valor: custoServicos,           negativa: true },
+    { rotulo: "Lucro bruto",              valor: lucroBruto,              destaque: true, margem: margem(lucroBruto) },
+    { rotulo: "(−) Despesas operacionais",valor: despOperacionais,        negativa: true },
+    { rotulo: "EBITDA gerencial",         valor: ebitda,                  destaque: true, margem: margem(ebitda) },
+    { rotulo: "(−) Despesas financeiras", valor: despFinanceira,          negativa: true },
+    { rotulo: "Resultado antes do IR",    valor: resultadoAntesTributos,  destaque: true },
+    { rotulo: "(−) Tributos sobre lucro", valor: tributos,                negativa: true },
+    { rotulo: "Resultado líquido gerencial", valor: resultadoLiquido,     destaque: true, margem: margem(resultadoLiquido) },
+  ];
 }

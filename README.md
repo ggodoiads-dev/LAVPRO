@@ -7,18 +7,33 @@ detalhadores. Centraliza agendamento, ordens de serviço, clientes,
 veículos, equipe, estoque, financeiro e indicadores em uma única
 plataforma multi-tenant.
 
-Este repositório contém a **Fase 1 — Fundação e Operação**:
+Este repositório contém as **Fases 1 e 2 — Fundação, Operação e Gestão administrativa**:
+
+**Fase 1 — Fundação & operação**
 
 - Autenticação (Supabase Auth) e proteção de rotas por middleware.
 - Multi-tenant isolado por `tenant_id` com Row Level Security no banco.
 - Perfis de acesso: `superadmin`, `proprietario`, `gerente`, `recepcao`, `operacional`, `financeiro`.
-- App shell responsivo com sidebar recolhível, tema claro/escuro e identidade visual própria.
+- App shell responsivo com sidebar recolhível (filtrada por perfil), tema claro/escuro e identidade visual própria.
 - Dashboard operacional com KPIs, série diária e serviços mais executados.
 - Cadastros de clientes, veículos e serviços.
 - Agenda de atendimentos com verificação básica de conflito de box.
 - Ordens de serviço com numeração sequencial, itens e desconto.
 - Kanban operacional com movimentação de status e destaque de atrasos.
 - Landing page comercial pronta para divulgação.
+
+**Fase 2 — Gestão administrativa**
+
+- Funcionários com ranking de produtividade e comissões apuradas.
+- Estoque: produtos, custo médio recalculado em cada entrada, alertas
+  de mínimo, movimentações (entrada, saída, perda e inventário).
+- Ficha técnica: produtos consumidos por serviço.
+- Comissões geradas automaticamente ao entregar uma OS (trigger).
+- Financeiro: contas a pagar/receber, formas de pagamento, pagamentos
+  de OS parciais ou totais, destaque de vencidas, marcar como paga.
+- DRE gerencial mensal (regime de caixa) com margem por linha.
+- Central de relatórios com receita por serviço, comissões por
+  funcionário, produtos a repor e resumo do DRE.
 
 ---
 
@@ -94,6 +109,7 @@ No painel do Supabase → SQL Editor, execute na ordem:
 1. `supabase/migrations/0001_init_schema.sql` — tabelas, índices e triggers
 2. `supabase/migrations/0002_rls_policies.sql` — Row Level Security
 3. `supabase/migrations/0003_seed_defaults.sql` — função `provision_tenant` e `v_dashboard_diario`
+4. `supabase/migrations/0004_phase2_admin.sql` — estoque, financeiro, comissões, DRE
 
 > Se preferir, use a CLI do Supabase (`supabase db push`) com o
 > projeto linkado.
@@ -138,8 +154,8 @@ dado é persistido nesse modo.
 
 ## Roadmap
 
-- **Fase 1 — Fundação (atual).** Auth, multi-tenant, operação essencial, Kanban, dashboard.
-- **Fase 2 — Gestão administrativa.** Funcionários, estoque, financeiro, comissões e relatórios.
+- **Fase 1 — Fundação (concluída).** Auth, multi-tenant, operação essencial, Kanban, dashboard.
+- **Fase 2 — Gestão administrativa (concluída).** Funcionários, estoque, financeiro, comissões, DRE, relatórios.
 - **Fase 3 — Expansão comercial.** CRM, fidelização, portal do cliente, notificações, pacotes.
 - **Fase 4 — Plataforma SaaS.** Painel superadmin, planos, cobrança recorrente.
 - **Fase 5 — Inteligência.** Previsão de demanda, recomendações, análise de rentabilidade.
