@@ -211,8 +211,16 @@ dado é persistido nesse modo.
 | `pnpm start` | Servir o build |
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | Checagem de tipos |
+| `pnpm test` | Suite vitest (motores de analytics + csv + rate-limit) |
 
 ---
+
+## Deploy
+
+Veja [`DEPLOY.md`](./DEPLOY.md) para o passo-a-passo completo em
+Vercel (frontend + API + cron) e Railway (Docker, opcional). Health
+check em `/api/health`, rate-limit no portal público e headers de
+segurança já inclusos.
 
 ## Roadmap
 

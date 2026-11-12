@@ -60,6 +60,8 @@ export function PortalBuscaForm({ slug }: { slug: string }) {
         return "Não encontramos esse veículo. Verifique a placa.";
       case "telefone_divergente":
         return "O telefone informado não confere com o cadastro do veículo.";
+      case "rate_limited":
+        return "Muitas consultas recentes. Aguarde um minuto e tente de novo.";
       default:
         return code;
     }

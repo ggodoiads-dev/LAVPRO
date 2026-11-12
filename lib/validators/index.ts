@@ -177,6 +177,26 @@ export const pontosRegraSchema = z.object({
 });
 export type PontosRegraInput = z.infer<typeof pontosRegraSchema>;
 
+// -------------------- Campanhas --------------------
+export const campanhaEditSchema = z.object({
+  id: z.string().uuid(),
+  nome: z.string().min(2).max(120),
+  descricao: optionalText,
+  gatilho: z.enum([
+    "reativacao",
+    "aniversario",
+    "pos_atendimento",
+    "lembrete_agendamento",
+    "manual",
+  ]),
+  canal: z.enum(["whatsapp", "sms", "email", "push", "console"]),
+  template_codigo: optionalText,
+  dias: z.coerce.number().int().min(0).optional(),
+  horas: z.coerce.number().int().min(0).optional(),
+  ativo: z.boolean().default(true),
+});
+export type CampanhaEditInput = z.infer<typeof campanhaEditSchema>;
+
 // -------------------- Avaliação (NPS) --------------------
 export const avaliacaoSchema = z.object({
   ordem_id: z.string().uuid(),

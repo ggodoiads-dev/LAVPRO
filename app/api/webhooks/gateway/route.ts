@@ -6,6 +6,7 @@ import {
   type GatewayEvent,
 } from "@/lib/integrations/gateway";
 import { createServiceClient } from "@/lib/supabase/service";
+import { log } from "@/lib/log";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -42,6 +43,10 @@ export async function POST(req: NextRequest) {
 
   const verification = verifyWebhookSignature({ rawBody, signatureHeader });
   if (!verification.ok) {
+    log.warn("gateway_webhook_rejected", {
+      reason: verification.reason,
+      gateway: GATEWAY_PROVIDER,
+    });
     return NextResponse.json(
       { ok: false, reason: verification.reason },
       { status: 401 },
@@ -139,10 +144,21 @@ export async function POST(req: NextRequest) {
     }
 
     await markProcessed(supabase, event.id);
+    log.info("gateway_webhook_processed", {
+      event_id: event.id,
+      type: event.type,
+      tenant_id: tenantId,
+    });
     return NextResponse.json({ ok: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     await markProcessed(supabase, event.id, msg);
+    log.error("gateway_webhook_processing_failed", {
+      event_id: event.id,
+      type: event.type,
+      tenant_id: tenantId,
+      detail: msg,
+    });
     return NextResponse.json(
       { ok: false, reason: "processing_failed", detail: msg },
       { status: 500 },

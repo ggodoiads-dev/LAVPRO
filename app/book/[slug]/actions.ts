@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import {
   IS_SUPABASE_CONFIGURED,
@@ -7,6 +8,7 @@ import {
   SUPABASE_URL,
 } from "@/lib/supabase/env";
 import { agendamentoPublicoSchema } from "@/lib/validators";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 export interface PublicBookState {
   error?: string;
@@ -18,6 +20,14 @@ export async function reservarAgendamento(
   _prev: PublicBookState,
   form: FormData,
 ): Promise<PublicBookState> {
+  const ip = clientIp(headers());
+  const limited = rateLimit("book", ip);
+  if (!limited.ok) {
+    return {
+      error: `Muitas tentativas. Tente novamente em ${limited.retryAfter}s.`,
+    };
+  }
+
   const servicoIds = form.getAll("servico_ids").map((x) => String(x));
   const parsed = agendamentoPublicoSchema.safeParse({
     slug: form.get("slug"),

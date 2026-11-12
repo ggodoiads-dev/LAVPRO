@@ -1,9 +1,11 @@
+import Link from "next/link";
 import {
   AlertTriangle,
   Brain,
   Calendar,
   Gauge,
   Lightbulb,
+  Pencil,
   Play,
   Power,
   Sparkles,
@@ -343,6 +345,13 @@ export default async function InteligenciaPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="inline-flex items-center gap-1">
+                      <Link
+                        href={`/inteligencia/campanhas/${c.id}`}
+                        className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium hover:bg-accent"
+                        title="Editar"
+                      >
+                        <Pencil className="h-3 w-3" /> Editar
+                      </Link>
                       <form action={executarCampanha}>
                         <input type="hidden" name="id" value={c.id} />
                         <button
