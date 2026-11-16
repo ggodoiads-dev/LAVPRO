@@ -1,0 +1,96 @@
+name: Configure Vercel Env Vars
+
+# Roda sob demanda (botao Run workflow na aba Actions).
+# Le 3 secrets do repositorio, linka ao projeto lavpro, define as 6
+# variaveis de ambiente em Production + Preview + Development e dispara
+# um redeploy via empty commit (a integracao GitHub -> Vercel ja existente
+# faz o deploy sozinha).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Link to Vercel project
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel link --project=lavpro --yes --token="$VERCEL_TOKEN"
+
+      - name: Clear stale env vars (best effort)
+        continue-on-error: true
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_APP_URL NEXT_PUBLIC_APP_NAME CRON_SECRET; do
+            for env in production preview development; do
+              vercel env rm "$name" --environment="$env" --yes --token="$VERCEL_TOKEN" >/dev/null 2>&1 \
+                || vercel env rm "$name" "$env" --yes --token="$VERCEL_TOKEN" >/dev/null 2>&1 \
+                || true
+            done
+          done
+
+      - name: Add env vars
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          SB_ANON: ${{ secrets.SUPABASE_ANON_KEY }}
+          SB_SR:   ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -e
+
+          add() {
+            local name="$1"
+            local value="$2"
+            if [ -z "$value" ]; then
+              echo "ERRO: valor vazio para $name" >&2
+              exit 1
+            fi
+            for env in production preview development; do
+              printf '%s' "$value" \
+                | vercel env add "$name" --environment="$env" --token="$VERCEL_TOKEN" \
+                || printf '%s' "$value" \
+                | vercel env add "$name" "$env" --token="$VERCEL_TOKEN"
+            done
+          }
+
+          add "NEXT_PUBLIC_SUPABASE_URL"      "https://txblsmduxtxuskahmoat.supabase.co"
+          add "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$SB_ANON"
+          add "SUPABASE_SERVICE_ROLE_KEY"     "$SB_SR"
+          add "NEXT_PUBLIC_APP_URL"           "https://lavpro-snowy.vercel.app"
+          add "NEXT_PUBLIC_APP_NAME"          "LAVPRO"
+          add "CRON_SECRET"                   "orl5hx8man2wq0kufic1ezsgv6jdpbty9347"
+
+      - name: Verify configured env vars
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel env ls --token="$VERCEL_TOKEN"
+
+      - name: Trigger production redeploy via empty commit
+        run: |
+          git config user.email "lavpro-ci@users.noreply.github.com"
+          git config user.name  "lavpro-ci"
+          git commit --allow-empty -m "ci: redeploy after env vars configured"
+          git push
+
+      - name: Summary
+        run: |
+          echo "### LAVPRO env vars configuradas" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "O empty commit dispara a Vercel; em ~3 min a URL abaixo deve retornar supabase=true, cron=true." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Health: https://lavpro-snowy.vercel.app/api/health" >> $GITHUB_STEP_SUMMARY
+          echo "- Landing: https://lavpro-snowy.vercel.app/" >> $GITHUB_STEP_SUMMARY
