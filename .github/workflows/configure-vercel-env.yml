@@ -1,10 +1,8 @@
 name: Configure Vercel Env Vars
 
-# Roda sob demanda (botao Run workflow na aba Actions).
-# Le 3 secrets do repositorio, linka ao projeto lavpro, define as 6
-# variaveis de ambiente em Production + Preview + Development e dispara
-# um redeploy via empty commit (a integracao GitHub -> Vercel ja existente
-# faz o deploy sozinha).
+# Roda sob demanda. Usa a API HTTP da Vercel (sem CLI interativa) para
+# definir as 6 variaveis de ambiente em Production + Preview + Development.
+# No fim, faz empty commit que dispara o redeploy automatico.
 on:
   workflow_dispatch:
 
@@ -19,76 +17,133 @@ jobs:
         with:
           fetch-depth: 1
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install Vercel CLI
-        run: npm i -g vercel@latest
-
-      - name: Link to Vercel project
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel link --project=lavpro --yes --token="$VERCEL_TOKEN"
-
-      - name: Clear stale env vars (best effort)
-        continue-on-error: true
+      - name: Resolve project id and team scope
+        id: project
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_APP_URL NEXT_PUBLIC_APP_NAME CRON_SECRET; do
-            for env in production preview development; do
-              vercel env rm "$name" --environment="$env" --yes --token="$VERCEL_TOKEN" >/dev/null 2>&1 \
-                || vercel env rm "$name" "$env" --yes --token="$VERCEL_TOKEN" >/dev/null 2>&1 \
-                || true
+          set -e
+          # Primeiro tenta sem team (conta pessoal); se nao achar, varre teams.
+          PROJECT_ID=$(curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v10/projects/lavpro" \
+            | jq -r '.id // empty')
+          TEAM_ID=""
+          if [ -z "$PROJECT_ID" ]; then
+            TEAMS=$(curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v2/teams" | jq -r '.teams[].id')
+            for t in $TEAMS; do
+              PROJECT_ID=$(curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" \
+                "https://api.vercel.com/v10/projects/lavpro?teamId=$t" \
+                | jq -r '.id // empty')
+              if [ -n "$PROJECT_ID" ]; then
+                TEAM_ID="$t"
+                break
+              fi
             done
-          done
+          fi
+          if [ -z "$PROJECT_ID" ]; then
+            echo "Projeto 'lavpro' nao encontrado em nenhum team"
+            exit 1
+          fi
+          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+          echo "team_id=$TEAM_ID"       >> $GITHUB_OUTPUT
+          echo "Project: $PROJECT_ID (team: ${TEAM_ID:-pessoal})"
 
-      - name: Add env vars
+      - name: Set env vars via Vercel API
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           SB_ANON: ${{ secrets.SUPABASE_ANON_KEY }}
           SB_SR:   ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PROJECT_ID: ${{ steps.project.outputs.project_id }}
+          TEAM_ID:    ${{ steps.project.outputs.team_id }}
         run: |
           set -e
 
-          add() {
-            local name="$1"
+          qs=""
+          if [ -n "$TEAM_ID" ]; then qs="?teamId=$TEAM_ID"; fi
+
+          # Apaga vars antigas para evitar duplicatas / conflito de tipo.
+          existing=$(curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v9/projects/$PROJECT_ID/env$qs?decrypt=false")
+
+          for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY \
+                      SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_APP_URL \
+                      NEXT_PUBLIC_APP_NAME CRON_SECRET; do
+            ids=$(echo "$existing" | jq -r ".envs[]? | select(.key == \"$name\") | .id")
+            for id in $ids; do
+              echo "Removendo $name (id=$id)"
+              curl -sS -X DELETE -H "Authorization: Bearer $VERCEL_TOKEN" \
+                "https://api.vercel.com/v9/projects/$PROJECT_ID/env/$id$qs" \
+                >/dev/null
+            done
+          done
+
+          # Helper: adiciona em production+preview+development
+          upsert() {
+            local key="$1"
             local value="$2"
+            local type="$3"   # plain | encrypted | sensitive
+
             if [ -z "$value" ]; then
-              echo "ERRO: valor vazio para $name" >&2
+              echo "ERRO: valor vazio para $key"
               exit 1
             fi
-            for env in production preview development; do
-              printf '%s' "$value" \
-                | vercel env add "$name" --environment="$env" --token="$VERCEL_TOKEN" \
-                || printf '%s' "$value" \
-                | vercel env add "$name" "$env" --token="$VERCEL_TOKEN"
-            done
+
+            body=$(jq -n \
+              --arg k "$key" \
+              --arg v "$value" \
+              --arg t "$type" \
+              '{key:$k, value:$v, type:$t, target:["production","preview","development"]}')
+
+            resp=$(curl -sS -w "\n%{http_code}" \
+              -X POST \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              -H "Content-Type: application/json" \
+              "https://api.vercel.com/v10/projects/$PROJECT_ID/env$qs" \
+              -d "$body")
+
+            code=$(echo "$resp" | tail -1)
+            body_out=$(echo "$resp" | sed '$d')
+
+            if [ "$code" != "200" ] && [ "$code" != "201" ]; then
+              echo "FALHOU $key ($code): $body_out"
+              exit 1
+            fi
+            echo "OK $key ($code)"
           }
 
-          add "NEXT_PUBLIC_SUPABASE_URL"      "https://txblsmduxtxuskahmoat.supabase.co"
-          add "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$SB_ANON"
-          add "SUPABASE_SERVICE_ROLE_KEY"     "$SB_SR"
-          add "NEXT_PUBLIC_APP_URL"           "https://lavpro-snowy.vercel.app"
-          add "NEXT_PUBLIC_APP_NAME"          "LAVPRO"
-          add "CRON_SECRET"                   "orl5hx8man2wq0kufic1ezsgv6jdpbty9347"
+          # NEXT_PUBLIC_* ficam como plain (vao expostos no browser mesmo)
+          upsert "NEXT_PUBLIC_SUPABASE_URL"      "https://txblsmduxtxuskahmoat.supabase.co" "plain"
+          upsert "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$SB_ANON"                                   "plain"
+          upsert "NEXT_PUBLIC_APP_URL"           "https://lavpro-snowy.vercel.app"            "plain"
+          upsert "NEXT_PUBLIC_APP_NAME"          "LAVPRO"                                     "plain"
 
-      - name: Verify configured env vars
+          # Secrets reais ficam encrypted
+          upsert "SUPABASE_SERVICE_ROLE_KEY"     "$SB_SR"                                     "encrypted"
+          upsert "CRON_SECRET"                   "orl5hx8man2wq0kufic1ezsgv6jdpbty9347"       "encrypted"
+
+      - name: List env vars (sanity check)
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel env ls --token="$VERCEL_TOKEN"
+          PROJECT_ID:   ${{ steps.project.outputs.project_id }}
+          TEAM_ID:      ${{ steps.project.outputs.team_id }}
+        run: |
+          qs=""
+          [ -n "$TEAM_ID" ] && qs="?teamId=$TEAM_ID"
+          curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v9/projects/$PROJECT_ID/env$qs?decrypt=false" \
+            | jq -r '.envs[] | "\(.key)  \(.type)  \(.target|join(","))"'
 
       - name: Trigger production redeploy via empty commit
         run: |
           git config user.email "lavpro-ci@users.noreply.github.com"
           git config user.name  "lavpro-ci"
-          git commit --allow-empty -m "ci: redeploy after env vars configured"
+          git commit --allow-empty -m "ci: redeploy after env vars configured (via api)"
           git push
 
       - name: Summary
         run: |
-          echo "### LAVPRO env vars configuradas" >> $GITHUB_STEP_SUMMARY
+          echo "### LAVPRO env vars configuradas via API" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "O empty commit dispara a Vercel; em ~3 min a URL abaixo deve retornar supabase=true, cron=true." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
